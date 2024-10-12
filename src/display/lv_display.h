@@ -43,20 +43,32 @@ typedef enum {
      * Use the buffer(s) to render the screen is smaller parts.
      * This way the buffers can be smaller then the display to save RAM. At least 1/10 screen size buffer(s) are recommended.
      */
-    LV_DISPLAY_RENDER_MODE_PARTIAL,
+    LV_DISPLAY_RENDER_MODE_PARTIAL = 0x1,
 
     /**
      * The buffer(s) has to be screen sized and LVGL will render into the correct location of the buffer.
      * This way the buffer always contain the whole image. Only the changed ares will be updated.
      * With 2 buffers the buffers' content are kept in sync automatically and in flush_cb only address change is required.
      */
-    LV_DISPLAY_RENDER_MODE_DIRECT,
+    LV_DISPLAY_RENDER_MODE_DIRECT = 0x2,
+
 
     /**
      * Always redraw the whole screen even if only one pixel has been changed.
      * With 2 buffers in flush_cb only and address change is required.
      */
-    LV_DISPLAY_RENDER_MODE_FULL,
+    LV_DISPLAY_RENDER_MODE_FULL = 0x4,
+
+    /**
+     * The combination of PARTIAL and DIRECT mode.
+     * Make LVGL render into 1 or 2 fast partial buffer(s) but also sync
+     * Also sync the frame buffers similarly in case of DIRECT mode.
+     * The partial buffers shall be set with `lv_display_set_render_buffers`, however
+     * the frame buffers needs to be set with `lv_display_set_frame_buffers`.
+     * To effectively use this mode 2 frame buffers and at least 1 partial buffer
+     * is required.
+     */
+    LV_DISPLAY_RENDER_MODE_DIRECT_AND_PARTIAL = LV_DISPLAY_RENDER_MODE_PARTIAL | LV_DISPLAY_RENDER_MODE_DIRECT,
 } lv_display_render_mode_t;
 
 typedef enum {
@@ -227,17 +239,20 @@ int32_t lv_display_get_dpi(const lv_display_t * disp);
  *--------------------*/
 
 /**
- * Set the buffers for a display, similarly to `lv_display_set_draw_buffers`, but accept the raw buffer pointers.
+ * Set the render buffers for a display, similarly to `lv_display_set_render_draw_buffers`,
+ * but accept the raw buffer pointers.
  * For DIRECT/FULL rending modes, the buffer size must be at least
  * `hor_res * ver_res * lv_color_format_get_size(lv_display_get_color_format(disp))`
+ * If render_mode is `LV_RENDER_MODE_DIRECT_AND_PARTIAL` `lv_display_set_frame_buffers`
+ * also needs to be used the set the frame buffers for DIRECT mode.
  * @param disp              pointer to a display
  * @param buf1              first buffer
  * @param buf2              second buffer (can be `NULL`)
  * @param buf_size          buffer size in byte
- * @param render_mode       LV_DISPLAY_RENDER_MODE_PARTIAL/DIRECT/FULL
+ * @param render_mode       LV_DISPLAY_RENDER_MODE_PARTIAL/DIRECT/FULL/DIRECT_AND_PARTIAL
  */
-void lv_display_set_buffers(lv_display_t * disp, void * buf1, void * buf2, uint32_t buf_size,
-                            lv_display_render_mode_t render_mode);
+void lv_display_set_render_buffers(lv_display_t * disp, void * buf1, void * buf2, size_t buf_size,
+                                   lv_display_render_mode_t render_mode);
 
 /**
  * Set the frame buffers for a display, similarly to `lv_display_set_buffers`, but allow
@@ -256,13 +271,62 @@ void lv_display_set_buffers_with_stride(lv_display_t * disp, void * buf1, void *
 
 /**
  * Set the buffers for a display, accept a draw buffer pointer.
- * Normally use `lv_display_set_buffers` is enough for most cases.
+ * Normally use `lv_display_set_render_buffers` is enough for most cases.
  * Use this function when an existing lv_draw_buf_t is available.
  * @param disp              pointer to a display
  * @param buf1              first buffer
  * @param buf2              second buffer (can be `NULL`)
  */
-void lv_display_set_draw_buffers(lv_display_t * disp, lv_draw_buf_t * buf1, lv_draw_buf_t * buf2);
+void lv_display_set_render_draw_buffers(lv_display_t * disp, lv_draw_buf_t * buf1, lv_draw_buf_t * buf2);
+
+/**
+ * Set frame buffers for LV_RENDER_MODE_DIRECT_AND_PARTIAL mode.
+ * The buffer size must be at least
+ * `hor_res * ver_res * lv_color_format_get_size(lv_display_get_color_format(disp))`
+ * @param disp              pointer to a display
+ * @param buf1              first buffer
+ * @param buf2              second buffer (can be `NULL`)
+ * @param buf_size          buffer size in byte
+ * @param stride            the stride of the frame buffer(s) (i.e. the line width in bytes).
+ *                          `LV_STRIDE_AUTO` can be used to calculate the stride automatically from the widget and color format
+ */
+void lv_display_set_frame_buffers(lv_display_t * disp, void * buf1, void * buf2, size_t buf_size, uint32_t stride);
+
+/**
+ * Set frame buffers for LV_RENDER_MODE_DIRECT_AND_PARTIAL mode as draw buffers.
+ * The buffer size must be at least
+ * `hor_res * ver_res * lv_color_format_get_size(lv_display_get_color_format(disp))`
+ * @param disp              pointer to a display
+ * @param buf1              first buffer
+ * @param buf2              second buffer (can be `NULL`)
+ */
+void lv_display_set_frame_draw_buffers(lv_display_t * disp, lv_draw_buf_t * buf1, lv_draw_buf_t * buf2);
+
+/**
+ * Get the frame buffer  (as `lv_draw_buf_t`) which is currently not displayed and now used for rendering.
+ * If only one frame buffer was set then always that frame buffer will be returned.
+ * It's useful in FULL, DIRECT, and DIRECT_AND_PARTIAL rendering modes
+ * to get which buffer to show on the display when the last area was refreshed too
+ * (see `lv_display_flush_is_last()`)
+ * @param disp              pointer to a display
+ * @note in DIRECT and FULL mode when the render buffers are set
+ * they are used as frame buffers too and it's not required to call
+ * `lv_display_set_frame_buffers()` separately.
+ */
+lv_draw_buf_t * lv_display_get_frame_draw_buffer_off_screen(lv_display_t * disp);
+
+/**
+ * Get a pointer to the frame buffer (as a pixel array) which is currently not displayed and now used for rendering.
+ * If only one frame buffer was set then always that frame buffer will be returned.
+ * It's useful in FULL, DIRECT, and DIRECT_AND_PARTIAL rendering modes
+ * to get which buffer to show on the display when the last area was refreshed too
+ * (see `lv_display_flush_is_last()`)
+ * @param disp              pointer to a display
+ * @note in DIRECT and FULL mode when the render buffers are set
+ * they are used as frame buffers too and it's not required to call
+ * `lv_display_set_frame_buffers()` separately.
+ */
+void * lv_display_get_frame_buffer_off_screen(lv_display_t * disp);
 
 /**
  * Set display render mode
@@ -355,7 +419,10 @@ LV_ATTRIBUTE_FLUSH_READY bool lv_display_flush_is_last(lv_display_t * disp);
 
 //! @endcond
 
-bool lv_display_is_double_buffered(lv_display_t * disp);
+bool lv_display_is_double_render_buffered(lv_display_t * disp);
+
+
+bool lv_display_is_double_frame_buffered(lv_display_t * disp);
 
 /*---------------------
  * SCREENS
