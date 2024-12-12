@@ -30,7 +30,6 @@ There are also some Python specific libraries that need to be installed. You can
 * sphinx-rtd-dark-mode
 * typing-extensions
 * sphinx-reredirects
-* dirsync
 
 To install using the `requirements.txt` file use the following command:
 
