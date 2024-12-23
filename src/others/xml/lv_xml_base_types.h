@@ -48,6 +48,12 @@ lv_align_t lv_xml_align_string_to_enum_value(const char * txt);
  */
 lv_dir_t lv_xml_dir_string_to_enum_value(const char * txt);
 
+/**
+ * Convert a text align string to enum
+ * @param txt       e.g. "left"
+ * @return          the related enum, e.g. `LV_TEXT_ALIGN_LEFT`
+ */
+lv_text_align_t lv_xml_text_align_string_to_enum_value(const char * txt);
 
 /**
  * Convert a flex flow string to enum
@@ -62,6 +68,14 @@ lv_flex_flow_t lv_xml_flex_flow_string_to_enum_value(const char * txt);
  * @return          the related enum, e.g. `LV_FLEX_ALIGN_SPACE_BETWEEN`
  */
 lv_flex_align_t lv_xml_flex_align_string_to_enum_value(const char * txt);
+
+
+/**
+ * Convert a layout string to enum
+ * @param txt       e.g. "flex"
+ * @return          the related enum, e.g. `LV_LAYOUT_FLEX`
+ */
+lv_layout_t lv_xml_layout_string_to_enum_value(const char * txt);
 
 /**********************
  *      MACROS

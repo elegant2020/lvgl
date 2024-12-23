@@ -52,7 +52,7 @@ lv_align_t lv_xml_align_string_to_enum_value(const char * txt)
 {
     if(lv_streq("top_left", txt)) return LV_ALIGN_TOP_LEFT;
     if(lv_streq("top_mid", txt)) return LV_ALIGN_TOP_MID;
-    if(lv_streq("top_right", txt)) return LV_ALIGN_TOP_LEFT;
+    if(lv_streq("top_right", txt)) return LV_ALIGN_TOP_RIGHT;
     if(lv_streq("bottom_left", txt)) return LV_ALIGN_BOTTOM_LEFT;
     if(lv_streq("bottom_mid", txt)) return LV_ALIGN_BOTTOM_MID;
     if(lv_streq("bottom_right", txt)) return LV_ALIGN_BOTTOM_RIGHT;
@@ -73,6 +73,17 @@ lv_dir_t lv_xml_dir_string_to_enum_value(const char * txt)
     if(lv_streq("all", txt)) return LV_DIR_ALL;
 
     LV_LOG_WARN("%s is an unknown value for dir", txt);
+    return 0; /*Return 0 in lack of a better option. */
+}
+
+lv_text_align_t lv_xml_text_align_string_to_enum_value(const char * txt)
+{
+    if(lv_streq("left", txt)) return LV_TEXT_ALIGN_LEFT;
+    if(lv_streq("right", txt)) return LV_TEXT_ALIGN_RIGHT;
+    if(lv_streq("center", txt)) return LV_TEXT_ALIGN_CENTER;
+    if(lv_streq("auto", txt)) return LV_TEXT_ALIGN_AUTO;
+
+    LV_LOG_WARN("%s is an unknown value for text align", txt);
     return 0; /*Return 0 in lack of a better option. */
 }
 
@@ -101,6 +112,16 @@ lv_flex_align_t lv_xml_flex_align_string_to_enum_value(const char * txt)
     if(lv_streq("space_evenly", txt)) return LV_FLEX_ALIGN_SPACE_EVENLY;
 
     LV_LOG_WARN("%s is an unknown value for flex align", txt);
+    return 0; /*Return 0 in lack of a better option. */
+}
+
+lv_layout_t lv_xml_layout_string_to_enum_value(const char * txt)
+{
+    if(lv_streq("none", txt)) return LV_LAYOUT_NONE;
+    if(lv_streq("flex", txt)) return LV_LAYOUT_FLEX;
+    if(lv_streq("grid", txt)) return LV_LAYOUT_GRID;
+
+    LV_LOG_WARN("%s is an unknown value for layout", txt);
     return 0; /*Return 0 in lack of a better option. */
 }
 
