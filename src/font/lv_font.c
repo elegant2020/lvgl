@@ -8,6 +8,7 @@
  *********************/
 
 #include "lv_font.h"
+#include "lv_font_fmt_txt.h"
 #include "../misc/lv_text_private.h"
 #include "../misc/lv_utils.h"
 #include "../misc/lv_log.h"
@@ -53,9 +54,23 @@ void lv_font_glyph_release_draw_data(lv_font_glyph_dsc_t * g_dsc)
 {
     const lv_font_t * font = g_dsc->resolved_font;
 
-    if(font != NULL && font->release_glyph) {
-        font->release_glyph(font, g_dsc);
+    if(!font) {
+        return;
     }
+
+    if(font->release_glyph) {
+        font->release_glyph(font, g_dsc);
+        return;
+    }
+
+#if LV_FONT_CACHE_GLYPH_CNT > 0
+    /* Since the old font resource does not register the release_glyph function in the font structure,
+     * it is processed here as a fallback to ensure forward compatibility.
+     */
+    if(lv_font_fmt_txt_is_built_in(font)) {
+        lv_font_release_glyph_fmt_txt(font, g_dsc);
+    }
+#endif
 }
 
 bool lv_font_get_glyph_dsc(const lv_font_t * font_p, lv_font_glyph_dsc_t * dsc_out, uint32_t letter,
